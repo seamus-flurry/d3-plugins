@@ -4,7 +4,14 @@ d3.sankey = function() {
       nodePadding = 8,
       size = [1, 1],
       nodes = [],
-      links = [];
+      links = [],
+      useSchema = false,
+      schema = {
+        id: 'id',
+        source: 'source',
+        target: 'target',
+        value: 'value'
+      };
 
   sankey.nodeWidth = function(_) {
     if (!arguments.length) return nodeWidth;
@@ -36,6 +43,27 @@ d3.sankey = function() {
     return sankey;
   };
 
+  sankey.schema = function(_) {
+    if (!arguments.length) {
+      return schema;
+    } else {
+      useSchema = true;
+    }
+    if (_.source) {
+      schema.source = _.source;
+    }
+    if (_.target) {
+      schema.target = _.target;
+    }
+    if (_.value) {
+      schema.value = _.value;
+    }
+    if (_.id) {
+      schema.id = _.id;
+    }
+    return sankey;
+  };
+
   sankey.layout = function(iterations) {
     computeNodeLinks();
     computeNodeValues();
@@ -54,13 +82,13 @@ d3.sankey = function() {
     var curvature = .5;
 
     function link(d) {
-      var x0 = d.source.x + d.source.dx,
-          x1 = d.target.x,
+      var x0 = d[schema.source].x + d[schema.source].dx,
+          x1 = d[schema.target].x,
           xi = d3.interpolateNumber(x0, x1),
           x2 = xi(curvature),
           x3 = xi(1 - curvature),
-          y0 = d.source.y + d.sy + d.dy / 2,
-          y1 = d.target.y + d.ty + d.dy / 2;
+          y0 = d[schema.source].y + d.sy + d.dy / 2,
+          y1 = d[schema.target].y + d.ty + d.dy / 2;
       return "M" + x0 + "," + y0
            + "C" + x2 + "," + y0
            + " " + x3 + "," + y1
@@ -84,10 +112,16 @@ d3.sankey = function() {
       node.targetLinks = [];
     });
     links.forEach(function(link) {
-      var source = link.source,
-          target = link.target;
-      if (typeof source === "number") source = link.source = nodes[link.source];
-      if (typeof target === "number") target = link.target = nodes[link.target];
+      var source = link[schema.source],
+          target = link[schema.target];
+
+      if (useSchema) {
+        source = link[schema.source] = nodes.filter(function(nodeFilter) {return nodeFilter[schema.id] == link[schema.source];})[0];
+        target = link[schema.target] = nodes.filter(function(nodeFilter) {return nodeFilter[schema.id] == link[schema.target];})[0];
+      } else {
+        if (typeof source === "number") source = link[schema.source] = nodes[link[schema.source]];
+        if (typeof target === "number") target = link[schema.target] = nodes[link[schema.target]];
+      }
       source.sourceLinks.push(link);
       target.targetLinks.push(link);
     });
@@ -96,7 +130,7 @@ d3.sankey = function() {
   // Compute the value (size) of each node by summing the associated links.
   function computeNodeValues() {
     nodes.forEach(function(node) {
-      node.value = Math.max(
+      node[schema.value] = Math.max(
         d3.sum(node.sourceLinks, value),
         d3.sum(node.targetLinks, value)
       );
@@ -118,7 +152,7 @@ d3.sankey = function() {
         node.x = x;
         node.dx = nodeWidth;
         node.sourceLinks.forEach(function(link) {
-          nextNodes.push(link.target);
+          nextNodes.push(link[schema.target]);
         });
       });
       remainingNodes = nextNodes;
@@ -133,7 +167,7 @@ d3.sankey = function() {
   function moveSourcesRight() {
     nodes.forEach(function(node) {
       if (!node.targetLinks.length) {
-        node.x = d3.min(node.sourceLinks, function(d) { return d.target.x; }) - 1;
+        node.x = d3.min(node.sourceLinks, function(d) { return d[schema.target].x; }) - 1;
       }
     });
   }
@@ -177,12 +211,12 @@ d3.sankey = function() {
       nodesByBreadth.forEach(function(nodes) {
         nodes.forEach(function(node, i) {
           node.y = i;
-          node.dy = node.value * ky;
+          node.dy = node[schema.value] * ky;
         });
       });
 
       links.forEach(function(link) {
-        link.dy = link.value * ky;
+        link.dy = link[schema.value] * ky;
       });
     }
 
@@ -197,7 +231,7 @@ d3.sankey = function() {
       });
 
       function weightedSource(link) {
-        return center(link.source) * link.value;
+        return center(link[schema.source]) * link[schema.value];
       }
     }
 
@@ -212,7 +246,7 @@ d3.sankey = function() {
       });
 
       function weightedTarget(link) {
-        return center(link.target) * link.value;
+        return center(link[schema.target]) * link[schema.value];
       }
     }
 
@@ -272,11 +306,11 @@ d3.sankey = function() {
     });
 
     function ascendingSourceDepth(a, b) {
-      return a.source.y - b.source.y;
+      return a[schema.source].y - b[schema.source].y;
     }
 
     function ascendingTargetDepth(a, b) {
-      return a.target.y - b.target.y;
+      return a[schema.target].y - b[schema.target].y;
     }
   }
 
@@ -285,7 +319,7 @@ d3.sankey = function() {
   }
 
   function value(link) {
-    return link.value;
+    return link[schema.value];
   }
 
   return sankey;
