@@ -1,7 +1,7 @@
 # Sankey Diagrams
 
-Demo: <http://bl.ocks.org/briantjacobs/9608831/>
-Demo gist: <https://gist.github.com/briantjacobs/9608831>
+Demo: <http://bl.ocks.org/briantjacobs/9608831/>  
+Demo gist: <https://gist.github.com/briantjacobs/9608831>  
 Blog post: <http://briantjacobs.com/d3-sankey-schema>
 
 Sankey plugin with optional schema function. Plugin now accepts arbitary field names and allows making reference to IDs within nodes rather than index-based nodes.
